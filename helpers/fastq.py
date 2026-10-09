@@ -1,5 +1,11 @@
 from pathlib import Path
 
+def parse_bounds(bounds):
+    s = bounds.strip('()')
+    parts = [p.strip() for p in s.split(',') if p.strip()]
+    bounds = tuple(float(p) for p in parts) if len(parts) > 1 else (0, float(parts[0]))
+    return bounds
+
 def open_fastq(input_fastq):
     input_fastq_path = Path(input_fastq)
     return open(input_fastq_path, encoding='ascii')
