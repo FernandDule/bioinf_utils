@@ -16,9 +16,9 @@ def filter_fastq(input_fastq, output_fastq, gc_bounds, length_bounds, quality_th
     log.write(f'quality_threshold (phred33): {quality_threshold} \n')
 
     output_file_path = Path(output_fastq)
-    output_dir = output_file_path.parent
+    output_dir = Path('./filtered')
     output_dir.mkdir(exist_ok=True, parents=True)
-    filtered = open(output_file_path, 'w', encoding='ascii')
+    filtered = open(output_dir/output_file_path, 'w', encoding='ascii')
 
     min_gc, max_gc = parse_bounds(gc_bounds)
     min_length, max_length = parse_bounds(length_bounds)
@@ -83,7 +83,7 @@ def filter_fastq(input_fastq, output_fastq, gc_bounds, length_bounds, quality_th
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("input_fastq", help="input fastq path")
-    parser.add_argument("output_fastq", help="output fastq path")
+    parser.add_argument("output_fastq", help="output fastq file name")
     parser.add_argument("--gc_bounds", help="(min_gc_%, max_gc_%) or max_gc%", default='(0, 100)')
     parser.add_argument("--length_bounds", help="(min_length, max_length) or max_length", default=f'(0, {2**32})')
     parser.add_argument("--quality_threshold", help="phred33 quality threshold", default=0, type=float)
