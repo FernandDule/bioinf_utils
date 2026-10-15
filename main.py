@@ -2,18 +2,19 @@ from pathlib import Path
 
 import sys
 sys.path.insert(0, "./helpers")
-from fastq import open_fastq, gc_control, length_control, quality_control, write_fastq, parse_bounds, write_log, write_failed
 
-import argparse
+from fastq import open_fastq, gc_control, length_control, quality_control, write_fastq, parse_bounds, write_log, write_failed
+from bio_files import prepare_fasta, write_fasta
+
 
 def filter_fastq(input_fastq, output_fastq, gc_bounds=(0, 100), length_bounds=(0, 2**32), quality_threshold=0):
 
     log = open('./log.txt', 'w')
-    
+
     output_file_path = Path(output_fastq)
     output_dir = Path('./filtered')
     output_dir.mkdir(exist_ok=True, parents=True)
-    
+
     filtered = open(output_dir/output_file_path, 'w', encoding='ascii')
 
     min_gc, max_gc = parse_bounds(gc_bounds)
@@ -62,25 +63,33 @@ def filter_fastq(input_fastq, output_fastq, gc_bounds=(0, 100), length_bounds=(0
     filtered.close()
     log.close()
 
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("input_fastq", help="input fastq path")
-    parser.add_argument("output_fastq", help="output fastq file name")
-    parser.add_argument("--gc_bounds", help="(min_gc_%, max_gc_%) or max_gc%", default='(0, 100)')
-    parser.add_argument("--length_bounds", help="(min_length, max_length) or max_length", default=f'(0, {2**32})')
-    parser.add_argument("--quality_threshold", help="phred33 quality threshold", default=0, type=float)
+def convert_multiline_fasta_to_oneline(input_fasta, output_fasta=None):
 
-    args = parser.parse_args()
+    file, output_file = prepare_fasta(input_fasta, output_fasta)
 
-    input_fastq = args.input_fastq
-    output_fastq = args.output_fastq
-    gc_bounds = args.gc_bounds
-    length_bounds = args.length_bounds
-    quality_threshold = args.quality_threshold
+    count = 0
+    s = ""
 
-    filter_fastq(input_fastq=input_fastq, output_fastq=output_fastq,
-                 gc_bounds=gc_bounds, length_bounds=length_bounds,
-                 quality_threshold=quality_threshold)
+    while True:
+        line = file.readline().rstrip('\n')
 
-if __name__ == '__main__':
-    main()
+        if not line:
+            break
+
+        if '>' in line:
+            if s:
+                write_fasta(s, output_file)
+                count += 1
+
+            s = f'{line}\n'
+        else:
+            s += line
+
+    if s:
+        write_fasta(s, output_file)
+        count += 1
+
+    print(f'Total number of fasta-sequences: {count}')
+    file.close()
+    output_file.close()
+
